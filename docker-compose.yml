@@ -1,29 +1,28 @@
 services:
 
-  services:
-    turn:
-      image: coturn/coturn:latest
-      command: ["-c", "/etc/coturn/turnserver.conf"]
-      volumes:
-        - ./turn/turnserver.conf:/etc/coturn/turnserver.conf:ro
-      ports:
-        - "3478:3478/udp"   # STUN/TURN (UDP)
-        - "3478:3478/tcp"   # TURN (TCP) - fallback si UDP bloqué
-        # - "5349:5349/tcp" # TURN sur TLS (optionnel, à activer si tu mets un cert)
-      restart: unless-stopped
+  turn:
+    image: coturn/coturn:latest
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    volumes:
+      - ./turn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    ports:
+      - "3478:3478/udp"   # STUN/TURN (UDP)
+      - "3478:3478/tcp"   # TURN (TCP) - fallback si UDP bloqué
+      # - "5349:5349/tcp" # TURN sur TLS (optionnel, à activer si tu mets un cert)
+    restart: unless-stopped
 
-    signal:
-      image: python:3.12-slim
-      working_dir: /app
-      volumes:
-        - ./signal:/app:ro
-      # Pas de Dockerfile : on installe au runtime puis on lance uvicorn
-      command: >
-        sh -c "pip install --no-cache-dir fastapi==0.115.0 uvicorn[standard]==0.30.6
-        && uvicorn app:app --host 0.0.0.0 --port 8080"
-      environment:
-        # pour plus tard si tu ajoutes de l’auth côté signalisation
-        - SECRET_KEY=change-me
-      ports:
-        - "127.0.0.1:18080:8080"   # WebSocket de signalisation (à passer derrière NGINX en prod)
-      restart: unless-stopped
+  signal:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./signal:/app:ro
+    # Pas de Dockerfile : on installe au runtime puis on lance uvicorn
+    command: >
+      sh -c "pip install --no-cache-dir fastapi==0.115.0 uvicorn[standard]==0.30.6
+      && uvicorn app:app --host 0.0.0.0 --port 8080"
+    environment:
+      # pour plus tard si tu ajoutes de l’auth côté signalisation
+      - SECRET_KEY=change-me
+    ports:
+      - "127.0.0.1:18080:8080"   # WebSocket de signalisation (à passer derrière NGINX en prod)
+    restart: unless-stopped
